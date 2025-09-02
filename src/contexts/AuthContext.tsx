@@ -74,3 +74,9 @@ export function useAuth() {
   }
   return context
 }
+
+// Convenience hook to access only the user (keeps UI decoupled from auth ops)
+export function useUser() {
+  const { user } = useAuth()
+  return user
+}
