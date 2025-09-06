@@ -28,8 +28,14 @@ export function RegisterForm() {
       return
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long')
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long')
+      setLoading(false)
+      return
+    }
+
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(password)) {
+      setError('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character')
       setLoading(false)
       return
     }

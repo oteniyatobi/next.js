@@ -58,7 +58,7 @@ export default function DashboardPage() {
                 Email: {user.email}
               </p>
               <p className="text-sm text-gray-600 mt-2">
-                User ID: {user.id}
+                Account created: {new Date(user.created_at).toLocaleDateString()}
               </p>
             </CardContent>
           </Card>

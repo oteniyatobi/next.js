@@ -4,7 +4,7 @@ import { useMemo, useState } from "react"
 import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { newPollSchema, type NewPollInput } from "@/app/polls/schemas"
-import { insertPoll } from "@/app/api/polls/queries"
+// Use secure API routes instead of direct database access
 import { useUser } from "@/contexts/AuthContext"
 
 import { Button } from "@/components/ui/button"
@@ -44,7 +44,20 @@ export default function NewPollForm() {
 		setServerError("")
 		setSubmitting(true)
 		try {
-			await insertPoll({ ...values, userId: user.id })
+			const response = await fetch('/api/polls', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(values),
+			})
+
+			if (!response.ok) {
+				const errorData = await response.json()
+				throw new Error(errorData.error || 'Failed to create poll')
+			}
+
+			const result = await response.json()
 			form.reset()
 		} catch (err) {
 			setServerError(err instanceof Error ? err.message : "Failed to create poll")

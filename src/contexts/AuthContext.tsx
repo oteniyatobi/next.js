@@ -80,9 +80,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signUp = useCallback(async (email: string, password: string) => {
+    // Enhanced validation
+    if (password.length < 8) {
+      throw new Error('Password must be at least 8 characters long')
+    }
+    
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(password)) {
+      throw new Error('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character')
+    }
+
     const { error } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`
+      }
     })
     if (error) throw error
   }, [])
