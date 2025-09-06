@@ -15,3 +15,4 @@ export const newPollSchema = z.object({
 })
 
 export type NewPollInput = z.infer<typeof newPollSchema>
+

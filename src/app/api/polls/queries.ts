@@ -1,34 +1,47 @@
 import { supabase } from '@/lib/supabase'
-import type { NewPollInput } from '@/app/polls/schemas'
+import { NewPollInput } from '@/app/polls/schemas'
 
-export type InsertPollPayload = NewPollInput & {
+export interface PollWithUserId extends NewPollInput {
   userId: string
 }
 
-export async function insertPoll(payload: InsertPollPayload) {
-  const { title, description, options, allowMultiple, closesAt, userId } = payload
-
-  // Ensure a table schema exists in your Supabase project:
-  // table: polls (id uuid pk, user_id uuid, title text, description text, allow_multiple boolean, closes_at timestamp)
-  // table: poll_options (id uuid pk, poll_id uuid fk, text text)
-
-  const { data: poll, error: pollError } = await supabase
+export async function insertPoll(poll: PollWithUserId) {
+  const { data, error } = await supabase
     .from('polls')
-    .insert({
-      title,
-      description: description || null,
-      allow_multiple: allowMultiple,
-      closes_at: closesAt ? closesAt.toISOString() : null,
-      user_id: userId,
-    })
-    .select('*')
+    .insert([poll])
+    .select()
     .single()
 
-  if (pollError) throw pollError
+  if (error) {
+    throw new Error(`Failed to create poll: ${error.message}`)
+  }
 
-  const optionRows = options.map((text) => ({ poll_id: poll.id, text }))
-  const { error: optionsError } = await supabase.from('poll_options').insert(optionRows)
-  if (optionsError) throw optionsError
+  return data
+}
 
-  return poll
+export async function getPolls() {
+  const { data, error } = await supabase
+    .from('polls')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    throw new Error(`Failed to fetch polls: ${error.message}`)
+  }
+
+  return data
+}
+
+export async function getPollById(id: string) {
+  const { data, error } = await supabase
+    .from('polls')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to fetch poll: ${error.message}`)
+  }
+
+  return data
 }
