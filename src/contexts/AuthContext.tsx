@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
 import { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 
@@ -18,50 +18,91 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // Memoized auth state update function to prevent unnecessary re-renders
+  const updateAuthState = useCallback((session: any) => {
+    setUser(session?.user ?? null)
+    setLoading(false)
+  }, [])
+
   useEffect(() => {
-    // Get initial session
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user ?? null)
-      setLoading(false)
+    let isMounted = true
+
+    // Get initial session with error handling
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.error('Error getting session:', error)
+          if (isMounted) {
+            setUser(null)
+            setLoading(false)
+          }
+          return
+        }
+
+        if (isMounted) {
+          updateAuthState(session)
+        }
+      } catch (error) {
+        console.error('Unexpected error during auth initialization:', error)
+        if (isMounted) {
+          setUser(null)
+          setLoading(false)
+        }
+      }
     }
 
-    getSession()
+    initializeAuth()
 
-    // Listen for auth changes
+    // Listen for auth changes with error handling
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user ?? null)
-        setLoading(false)
+        if (isMounted) {
+          updateAuthState(session)
+        }
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
+  }, [updateAuthState])
+
+  // Memoized auth functions to prevent unnecessary re-renders
+  const signIn = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    })
+    if (error) throw error
   }, [])
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    if (error) throw error
-  }
-
-  const signUp = async (email: string, password: string) => {
+  const signUp = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signUp({
-      email,
+      email: email.trim().toLowerCase(),
       password,
     })
     if (error) throw error
-  }
+  }, [])
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
-  }
+  }, [])
+
+  // Memoized context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    user,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+  }), [user, loading, signIn, signUp, signOut])
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   )
