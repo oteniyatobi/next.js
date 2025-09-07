@@ -1,6 +1,15 @@
 # 🔒 Secure Polling App
 
-A modern, secure polling application built with Next.js, Supabase, and TypeScript. This application has undergone a comprehensive security audit and implements enterprise-grade security measures.
+A modern, secure polling application built with Next.js, Supabase, and TypeScript. This application has undergone a comprehensive security audit and implements enterprise-grade security measures with extensive documentation for developers.
+
+## 📚 **Documentation Overview**
+
+This codebase includes comprehensive documentation with:
+- **JSDoc comments** for all functions and components
+- **Inline comments** explaining complex logic and security measures
+- **Type definitions** with detailed property descriptions
+- **API documentation** with request/response examples
+- **Security explanations** for all implemented measures
 
 ## 🚀 **Features**
 
@@ -172,29 +181,215 @@ For detailed security information, see [SECURITY.md](./SECURITY.md).
 
 ## 🛠️ **Development**
 
-### **Available Scripts**
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm test` - Run tests
-- `npm run test:coverage` - Run tests with coverage
+### **Codebase Structure**
 
-### **Code Quality**
-- TypeScript for type safety
-- ESLint for code quality
-- Prettier for code formatting
-- Comprehensive test coverage
+```
+src/
+├── app/                          # Next.js App Router
+│   ├── api/                      # API Routes (Server-side)
+│   │   ├── auth/verify/         # Authentication verification
+│   │   └── polls/               # Poll management endpoints
+│   ├── auth/                    # Authentication pages
+│   │   ├── login/page.tsx       # Login page
+│   │   ├── register/page.tsx    # Registration page
+│   │   └── callback/route.ts    # Auth callback handler
+│   ├── dashboard/page.tsx       # Protected dashboard
+│   └── polls/                   # Poll management
+│       ├── NewPollForm.tsx      # Poll creation form
+│       ├── page.tsx             # Polls listing
+│       └── schemas.ts           # Validation schemas
+├── components/                   # Reusable UI components
+│   ├── ui/                      # shadcn/ui components
+│   ├── LoginForm.tsx            # Login form component
+│   └── RegisterForm.tsx         # Registration form component
+├── contexts/                     # React Context providers
+│   └── AuthContext.tsx          # Authentication context
+├── lib/                         # Utility libraries
+│   ├── supabase.ts             # Supabase client configuration
+│   ├── utils.ts                # General utilities
+│   └── validation.ts           # Validation utilities
+└── middleware.ts                # Next.js middleware for route protection
+```
+
+### **Key Components Documentation**
+
+#### **Authentication System**
+- **AuthContext** (`src/contexts/AuthContext.tsx`): Centralized authentication state management
+- **Middleware** (`middleware.ts`): Server-side route protection
+- **API Routes** (`src/app/api/auth/`): Secure authentication endpoints
+
+#### **Poll Management**
+- **NewPollForm** (`src/app/polls/NewPollForm.tsx`): Comprehensive poll creation form
+- **Poll Schemas** (`src/app/polls/schemas.ts`): Zod validation schemas
+- **Poll API** (`src/app/api/polls/`): Secure poll CRUD operations
+
+#### **Security Features**
+- **Server-side Authentication**: All sensitive operations verified on server
+- **Input Validation**: Zod schemas for all user inputs
+- **Route Protection**: Middleware-based access control
+- **Password Security**: Enhanced password requirements
+
+### **Available Scripts**
+- `npm run dev` - Start development server with Turbopack
+- `npm run build` - Build for production with Turbopack
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint for code quality
+- `npm test` - Run Jest test suite
+- `npm run test:coverage` - Run tests with coverage report
+- `npm run test:watch` - Run tests in watch mode
+
+### **Code Quality Standards**
+- **TypeScript**: Full type safety throughout the application
+- **ESLint**: Code quality and consistency enforcement
+- **Prettier**: Automatic code formatting
+- **JSDoc**: Comprehensive function and component documentation
+- **Test Coverage**: Unit and integration tests for critical functionality
 
 ## 📚 **API Documentation**
 
 ### **Authentication Endpoints**
-- `GET /api/auth/verify` - Verify user authentication
-- `POST /auth/callback` - Handle authentication callback
+
+#### `GET /api/auth/verify`
+Verify user authentication status.
+
+**Response:**
+```json
+{
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "created_at": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
+#### `GET /auth/callback`
+Handle Supabase authentication callback after email confirmation.
+
+**Query Parameters:**
+- `code` - Authorization code from Supabase
+
+**Response:** Redirects to `/dashboard` on success
 
 ### **Poll Endpoints**
-- `GET /api/polls` - Get all polls (authenticated)
-- `POST /api/polls` - Create new poll (authenticated)
+
+#### `GET /api/polls`
+Retrieve all polls for authenticated users.
+
+**Headers:**
+- `Cookie` - Authentication session cookie
+
+**Response:**
+```json
+{
+  "polls": [
+    {
+      "id": "uuid",
+      "title": "What should we have for lunch?",
+      "description": "Please choose your preferred option",
+      "options": ["Pizza", "Burger", "Salad"],
+      "allowMultiple": false,
+      "closesAt": "2024-12-31T23:59:59Z",
+      "created_at": "2024-01-01T00:00:00Z",
+      "user_id": "user-uuid"
+    }
+  ]
+}
+```
+
+#### `POST /api/polls`
+Create a new poll.
+
+**Headers:**
+- `Content-Type: application/json`
+- `Cookie` - Authentication session cookie
+
+**Request Body:**
+```json
+{
+  "title": "What should we have for lunch?",
+  "description": "Please choose your preferred option",
+  "options": ["Pizza", "Burger", "Salad"],
+  "allowMultiple": false,
+  "closesAt": "2024-12-31T23:59:59Z"
+}
+```
+
+**Response (201):**
+```json
+{
+  "poll": {
+    "id": "uuid",
+    "title": "What should we have for lunch?",
+    "description": "Please choose your preferred option",
+    "options": ["Pizza", "Burger", "Salad"],
+    "allowMultiple": false,
+    "closesAt": "2024-12-31T23:59:59Z",
+    "created_at": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
+## 🚀 **Usage Examples**
+
+### **Creating a Poll**
+
+```typescript
+// Using the NewPollForm component
+import { NewPollForm } from '@/app/polls/NewPollForm'
+
+function CreatePollPage() {
+  return (
+    <div className="container mx-auto py-8">
+      <h1 className="text-2xl font-bold mb-6">Create New Poll</h1>
+      <NewPollForm />
+    </div>
+  )
+}
+```
+
+### **Authentication in Components**
+
+```typescript
+// Using the authentication context
+import { useAuth, useUser } from '@/contexts/AuthContext'
+
+function UserProfile() {
+  const { user, loading, signOut } = useAuth()
+  
+  if (loading) return <div>Loading...</div>
+  if (!user) return <div>Please log in</div>
+  
+  return (
+    <div>
+      <h1>Welcome, {user.email}!</h1>
+      <button onClick={signOut}>Sign Out</button>
+    </div>
+  )
+}
+```
+
+### **Form Validation**
+
+```typescript
+// Using Zod schemas for validation
+import { newPollSchema } from '@/app/polls/schemas'
+
+const pollData = {
+  title: "What's your favorite color?",
+  description: "Choose from the options below",
+  options: ["Red", "Blue", "Green"],
+  allowMultiple: false
+}
+
+// Validate data
+const result = newPollSchema.safeParse(pollData)
+if (result.success) {
+  console.log('Valid poll data:', result.data)
+} else {
+  console.error('Validation errors:', result.error.errors)
+}
+```
 - `GET /api/polls/[id]` - Get specific poll (authenticated)
 - `DELETE /api/polls/[id]` - Delete poll (owner only)
 

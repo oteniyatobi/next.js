@@ -2,6 +2,15 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
+/**
+ * Creates a Supabase client configured for server-side operations.
+ * 
+ * This function sets up a Supabase client with proper cookie handling
+ * for server-side authentication and database operations. It uses the
+ * Supabase SSR package to ensure proper session management.
+ * 
+ * @returns {SupabaseClient} Configured Supabase client for server operations
+ */
 function createSupabaseClient() {
   const cookieStore = cookies()
   
@@ -24,9 +33,43 @@ function createSupabaseClient() {
   )
 }
 
+/**
+ * GET /api/polls/[id] - Retrieve a specific poll by ID
+ * 
+ * This endpoint fetches a single poll by its ID with proper authentication.
+ * Only authenticated users can access this endpoint.
+ * 
+ * Security Features:
+ * - Server-side authentication verification
+ * - Poll ID validation
+ * - Proper error handling without information disclosure
+ * 
+ * @param {NextRequest} request - The incoming HTTP request
+ * @param {Object} context - Route context containing params
+ * @param {Promise<{id: string}>} context.params - Route parameters with poll ID
+ * @returns {Promise<NextResponse>} JSON response containing poll data or error
+ * 
+ * @example
+ * ```typescript
+ * // GET /api/polls/123e4567-e89b-12d3-a456-426614174000
+ * // Response (200)
+ * {
+ *   "poll": {
+ *     "id": "123e4567-e89b-12d3-a456-426614174000",
+ *     "title": "What should we have for lunch?",
+ *     "description": "Please choose your preferred option",
+ *     "options": ["Pizza", "Burger", "Salad"],
+ *     "allowMultiple": false,
+ *     "closesAt": "2024-12-31T23:59:59Z",
+ *     "created_at": "2024-01-01T00:00:00Z",
+ *     "user_id": "user-uuid"
+ *   }
+ * }
+ * ```
+ */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = createSupabaseClient()
@@ -44,7 +87,7 @@ export async function GET(
       )
     }
 
-    const pollId = params.id
+    const { id: pollId } = await params
 
     // Validate poll ID format
     if (!pollId || typeof pollId !== 'string') {
@@ -85,9 +128,40 @@ export async function GET(
   }
 }
 
+/**
+ * DELETE /api/polls/[id] - Delete a specific poll by ID
+ * 
+ * This endpoint deletes a poll by its ID with proper authentication and authorization.
+ * Only the poll owner can delete their own polls.
+ * 
+ * Security Features:
+ * - Server-side authentication verification
+ * - Ownership verification (only poll owner can delete)
+ * - Poll ID validation
+ * - Proper error handling without information disclosure
+ * 
+ * @param {NextRequest} request - The incoming HTTP request
+ * @param {Object} context - Route context containing params
+ * @param {Promise<{id: string}>} context.params - Route parameters with poll ID
+ * @returns {Promise<NextResponse>} JSON response confirming deletion or error
+ * 
+ * @example
+ * ```typescript
+ * // DELETE /api/polls/123e4567-e89b-12d3-a456-426614174000
+ * // Response (200)
+ * {
+ *   "message": "Poll deleted successfully"
+ * }
+ * 
+ * // Response (403) - Not the owner
+ * {
+ *   "error": "Forbidden: You can only delete your own polls"
+ * }
+ * ```
+ */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = createSupabaseClient()
@@ -105,7 +179,7 @@ export async function DELETE(
       )
     }
 
-    const pollId = params.id
+    const { id: pollId } = await params
 
     // Validate poll ID format
     if (!pollId || typeof pollId !== 'string') {
